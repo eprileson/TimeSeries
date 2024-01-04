@@ -179,6 +179,23 @@ t(B) %*% A
 ### 
 # chapter 2: linear regression in matrix form
 
+#other practice:
+data(AirPassengers)
+AP <- AirPassengers
+layout(1:2) #can use instead of par(mfrow)
+plot(aggregate(AP)) #aggregate to get annual trend, remove seasonal
+boxplot(AP ~ cycle(AP)) #summary of each season's values:
+
+#use window function to view parts of a ts"
+
+win <- window(AP, start = c(1949, 1), end = c(1955, 5))
+Newtime <- time(win)
+layout(1:1)
+plot(win); abline(reg = lm(win ~ Newtime))
+
+
+
+
 #import data
 data(stackloss, package = "datasets")
 dat <- stackloss[1:4, ] #subset first 4 rows
