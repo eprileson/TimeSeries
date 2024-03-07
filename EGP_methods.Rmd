@@ -5,34 +5,6 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-------------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 ## Methods:
 
 ### Overview:
@@ -53,23 +25,112 @@ $yt = Zxt + a + vt$
 
 Where $vt$ \~ $MVN(0, R)$
 
-*Model 2:* The second model will be nearly identical to the first, but will include a covariate term or AR(1) parameter to see if the additional term improves model fit. In the state model, the model parameters include $xt$ a 4 x 1 matrix representing the four time series, $b$ equal to the covariate term as a 4 x 1 matrix, $xt-1$ equal to the process model parameter per time step, $C$ equal to the coefficient of the predictor variable (i.e., the strength of the predictor) as a 4 x 1 matrix, $ct$ as the predictor term in a 4 x 1 matrix, $u$ the 4 x 1 vector representing the bias term per time step coefficient, and $Q$ representing the variance – covariance matrix of the process errors with $q$ on the diagonal and 0s on the off diagonal. We assume the distribution of the process errors follow a Gaussian distribution, have constant variance, and are independent (iid). 
+[*Model 2:*] The second model will be nearly identical to the first, but will include a covariate term to see if the additional term improves model fit. In the state model, the model parameters include $xt$ a 4 x 1 matrix representing the four time series, $b$ equal to the covariate term as a 4 x 1 matrix, $xt-1$ equal to the process model parameter per time step, $C$ equal to the coefficient of the predictor variable (i.e., the strength of the predictor) as a 4 x 1 matrix, $ct$ as the predictor term in a 4 x 1 matrix, $u$ the 4 x 1 vector representing the bias term per time step coefficient, and $Q$ representing the variance – covariance matrix of the process errors with $q$ on the diagonal and 0s on the off diagonal. We assume the distribution of the process errors follow a Gaussian distribution, have constant variance, and are independent (iid).
 
-$Xt = bxt-1 + Cct + u + wt$ 
+$Xt = bxt-1 + Cct + u + wt$
 
-Where $wt$ ~ $MVN(0, Q)$ 
+Where $wt$ \~ $MVN(0, Q)$
 
-We then have our observation modeled with $yt$ as a 14 x 1 matrix representing the observed time series data, $Z$ equal to the matrix mapping the states onto the observation (i.e., a 14 x 4 identity matrix), $xt$ representing the underlying processes, $D$ equal to the coefficient of the predictor variable (ie., the strength of the predictor) as a 4 x 1 matrix, $dt$ as the predictor term in a 4 x 1 matrix, $a$ is the sampling bias or offset matrix, and r is the variance of the observation errors. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent. 
+We then have our observation modeled with $yt$ as a 14 x 1 matrix representing the observed time series data, $Z$ equal to the matrix mapping the states onto the observation (i.e., a 14 x 4 identity matrix), $xt$ representing the underlying processes, $D$ equal to the coefficient of the predictor variable (ie., the strength of the predictor) as a 4 x 1 matrix, $dt$ as the predictor term in a 4 x 1 matrix, $a$ is the sampling bias or offset matrix, and r is the variance of the observation errors. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent.
 
-$Yt = Zxt + Ddt + a + vt$ 
+$Yt = Zxt + Ddt + a + vt$
 
-Where $vt$ ~ $MVN(0, r)$.
+Where $vt$ \~ $MVN(0, r)$.
 
-Data simulation: To test the validity of the model, I first simulate data from a multivariate normal distribution for the state model outcomes and include process errors. To do so, I generate a data set derived from a multivariate normal distribution based on the number of time points, the strength of density dependence, and setting the initial state (x0) to be the first value from the simulated data. 
+Data simulation: To test the validity of the model, I first simulate data from a multivariate normal distribution for the state model outcomes and include process errors. To do so, I generate a data set derived from a multivariate normal distribution based on the number of time points, the strength of density dependence, and setting the initial state (x0) to be the first value from the simulated data.
 
-For each time step, each state ($xt$) is defined by the model This simulated data is then used for the response in the model. Model parameters: In order to set up the data for modeling using the MARSS() function from the MARSS package, we begin by setting the initial state ($x0$) – since the model is autoregressive (meaning dependent on previous time points of the same series), the $x0$ term should be defined first. the bias term ($u$) and the ($a$) term in the AR(1) model to be zero, since u is difficult to estimate in practice along with setting the $Z$ matrix to one, $Q$ to “q” and r to “r” to represent the variances of the state and observation model respectively. Each of these is plugged in as a matrix within a list so that the MARSS function can appropriately calculate each parameter.
+```{r}
+set.seed(592)
+library(MASS)
+#use mvnorm() function from {MASS} pkg to simulate multivariate normally dist data
+TT <- 14 #time steps
+
+#set strength of density dependence (highly variable in Dros)
+
+bb <- 0.5
+
+#bias term for RW:
+uu <- 0 
+
+##var-cov matrix for the process error in the state model:
+QQ <- diag(c(0.01, 0.01, 0.01, 0.01)) # no covariance, simulated process error vals
+
+#generate time series of process errors with SD = the var-cov matrix defined above, then transpose process errors to match equational form, w 4x4 matrix
+ww <- mvrnorm(n = TT, mu = c(0,0,0,0), Sigma = QQ) %>% t() #mu = mean, specified to be 0 in all models where we subtract u
+
+#initialize state vector:
+xx <- ww
+
+#simulate data as random walk with bias
+for (t in 2:TT){ #for every time step in the series
+  xx[,t] <- xx[, t-1] + uu + ww[, t] #follow model based on previous time step, add bias term and process error term / time step
+}
+
+```
+
+Then, we simulate the data to be offset by observation error from the state model:
+
+```{r}
+#now add observation error with var-covar matrix
+RR <- diag(c(0.005, 0.005, 0.005, 0.005))
+
+#observation errors from mvn with 0 as mean and var as matrix above; transposed to match vals in state
+vv <- mvrnorm(n = TT, mu = c(0,0,0,0), Sigma = RR) %>% t()
+
+#now observation model:
+yy <- xx + vv
+```
+
+For each time step, each state ($xt$) is defined by the model This simulated data is then used for the response in the model.
+
+[*Model parameters:*]{.underline}
+
+In order to set up the data for modeling using the MARSS() function from the MARSS package, we begin by setting the initial state ($x0$) – since the model is autoregressive (meaning dependent on previous time points of the same series), the $x0$ term should be defined first. the bias term ($u$) and the ($a$) term in the AR(1) model to be zero, since u is difficult to estimate in practice along with setting the $Z$ matrix to one, $Q$ to “q” and r to “r” to represent the variances of the state and observation model respectively. Each of these is plugged in as a matrix within a list so that the MARSS function can appropriately calculate each parameter:
+
+```{r}
+### setting up model parameters for MARSS: need to make everything a matrix using a list for each item
+# from the state and obs models:
+
+model_list <- list(
+  #state model:
+  B = diag(4), #identity matrix
+  U = matrix(0, 4, 1), # 4x1 0 matrix for bias factor
+  C = matrix(0.5, 4, 1), #population predictor strength
+  c = matrix(1, 1, 1),
+  Q = matrix(c(list("q"),list(0),list(0),list(0), #Q covariance matrix for process errors
+               list(0),list("q"),list(0),list(0),
+               list(0),list(0),list("q"),list(0),
+               list(0),list(0),list(0),list("q")), 4, 4),
+  #obs model
+  Z = diag(4), #identity matrix
+  A = matrix(0, 4, 1), #scaling coeff A, set to 0
+  D = matrix(0, 4, 1), #explanatory coeff effect none here set to 0
+  d = matrix(0), #explanatory variable, none for this model
+  R = matrix(c(list("r"),list(0),list(0),list(0), #Q covariance matrix for process errors
+               list(0),list("r"),list(0),list(0),
+               list(0),list(0),list("r"),list(0),
+               list(0),list(0),list(0),list("r")), 4, 4)
+  
+)
+```
+
+Next, we need to set the observation data as a matrix based on the number of time steps and states (14 x 4 vector) to work with the MARSS function:
+
+```{r}
+#need to set the observations (y) to a defined N (rows) x T (cols) matrix, where
+# T = time steps, so 14:
+YY <- matrix(yy, nrow = 4, ncol = TT)
+```
+
+Now, we can input the values as matrices into the MARSS() function where the first argument takes the observation matrix ($YY$) and the second argument takes the model, which we created as a list inside the object *model_list*
+
+```{r}
+#fit model with the response as the observation matrix and the model as the list of matrices 
+#defined above:
+mod_rw <- MARSS(y = YY, model = model_list)
+
+```
+
+[*Model output and estimates:*]{.underline}
 
 Estimates and analyses:
-
-
-

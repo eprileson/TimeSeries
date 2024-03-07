@@ -261,13 +261,19 @@ model_list <- list(
   
 )
 
+
+#need to set the observations (y) to a defined N (rows) x T (cols) matrix, where
+# T = time steps, so 14:
+YY <- matrix(yy, nrow = 4, ncol = TT)
+
 ##now fit the random walk with bias to the simulated data with MARSS
 
-#fit model:
-mod_rw <- MARSS(y = yy, model = model_list)
+#fit model with the response as the observation matrix and the model as the list of matrices 
+#defined above:
+mod_rw <- MARSS(y = YY, model = model_list)
 
 ##analyses:
-xx_hat <- mod_rw$
+xx_hat <- mod_rw$states
   
   ##plot estimates:
   ggplot(data = mod_rw$states, aes(x = xx, y = xx_hat))+
@@ -276,7 +282,7 @@ xx_hat <- mod_rw$
 
 
 
-plot(xx[2,], xx[1],
+plot(xx[4,], xx[3,], xx[2,], xx[1],
      xlim = range(xx[1:4,], yy[1:4, ], xx_hat[1:4, ]),
      ylim = range(xx[1:4, ], yy[1:4, ], xx_hat[1:4, ]),
      pch = 16, type = "o", col = "blue",
