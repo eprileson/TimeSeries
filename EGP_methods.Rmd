@@ -1,0 +1,75 @@
+---
+title: "EGP_project"
+author: "Eric Prileson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Methods:
+
+### Overview:
+
+Data from these experiments is derived from four populations of *D. melanogaster* reared within enclosed outdoor mesocosms in the growing season of 2023. Throughout the growing season (July - November), the populations were reared within the enclosures and their populations sampled for abundance at 14 time-points. At three time-points, the populations were also collected and tested for relevant phenotypes (e.g., fecundity) along with their genotypes via genomic sampling. Modeling approach: Here, I use a multivariate autoregressive state-space (MARSS) modeling approach to analyze the population data. This approach is appropriate because there are four separate time series ($x1:4$; representing the four distinct populations), and 14 measured time points or observations of the population ($y1:14$). To explore this in a state-space design, I consider both a biased random walk AR(1) stationary model and an AR(1) model with a covariate (population type). For the models, I will consider the observed variance (v) to be diagonal and equal. To construct each model and get estimate outputs, I plan to use the MARSS() function from the MARSS package (version 3.11.8; citation). From the models generated, I used information theory approach for model selection using the AICc() function from the AICc package (citation) to find the optimal model fit for the time series data. All analyses and visualizations were conducted in R version 4.3.1.
+
+### Multivariate state-space modeling:
+
+[*Model 1:*]{.underline} To generate an accurate time series model for the four D. melanogaster populations across the whole season, I use MARSS modeling following a similar approach as Tolimieri et al. (2016). Both the state model - to represent reality - and the observation model to model the observed data combined can help us best estimate the true state of nature with observation and process errors. I first use a biased random walk structure with a bias term to model the population patterns. In the state space model, I first model the true state of nature based on a Gompertz negative density-dependent population growth AR(1) model. The model [p]{.underline}arameters include $xt$ a 4 x 1 matrix representing the 4 states or population trajectories representing log abundance of flies across the season, b equal to the process model coefficient (i.e., strength of density dependence) as a 4 x1 matrix, $xt-1$ equal to the process model parameter per time step as a 4 x 1 matrix, u the 4 x 1 vector representing the bias term per time step coefficient, and $Q$ representing the variance – covariance matrix of the process errors with $Q$s on the diagonal and 0s on the off-diagonal. We assume the distribution of the process errors follow a Gaussian distribution, have constant variance, and are independent (iid).
+
+$xt = bxt-1 + u + wt$
+
+Where $wt$ \~ $MVN(0, Q)$
+
+We then have our observation modeled with $yt$ as a 14 x 1 matrix representing the observed abundance at each time point, $Z$ equal to the matrix mapping the observations onto the states (i.e., a 14 x 4 matrix such that the total observations in the $yt$ 14 x1 matrix can be multiplied to (mapped onto) the $xt$ 4 x 1 matrix), $xt$ representing the underlying processes as a 4 x 1 matrix, $a$ is the sampling bias or offset as a 14 x 1 matrix, and $R$ is the variance – covariance matrix of the observation errors with $R$s on the diagonal and 0s on the off-diagonal. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent.
+
+$yt = Zxt + a + vt$
+
+Where $vt$ \~ $MVN(0, R)$
+
+*Model 2:* The second model will be nearly identical to the first, but will include a covariate term or AR(1) parameter to see if the additional term improves model fit. In the state model, the model parameters include $xt$ a 4 x 1 matrix representing the four time series, $b$ equal to the covariate term as a 4 x 1 matrix, $xt-1$ equal to the process model parameter per time step, $C$ equal to the coefficient of the predictor variable (i.e., the strength of the predictor) as a 4 x 1 matrix, $ct$ as the predictor term in a 4 x 1 matrix, $u$ the 4 x 1 vector representing the bias term per time step coefficient, and $Q$ representing the variance – covariance matrix of the process errors with $q$ on the diagonal and 0s on the off diagonal. We assume the distribution of the process errors follow a Gaussian distribution, have constant variance, and are independent (iid). 
+
+$Xt = bxt-1 + Cct + u + wt$ 
+
+Where $wt$ ~ $MVN(0, Q)$ 
+
+We then have our observation modeled with $yt$ as a 14 x 1 matrix representing the observed time series data, $Z$ equal to the matrix mapping the states onto the observation (i.e., a 14 x 4 identity matrix), $xt$ representing the underlying processes, $D$ equal to the coefficient of the predictor variable (ie., the strength of the predictor) as a 4 x 1 matrix, $dt$ as the predictor term in a 4 x 1 matrix, $a$ is the sampling bias or offset matrix, and r is the variance of the observation errors. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent. 
+
+$Yt = Zxt + Ddt + a + vt$ 
+
+Where $vt$ ~ $MVN(0, r)$.
+
+Data simulation: To test the validity of the model, I first simulate data from a multivariate normal distribution for the state model outcomes and include process errors. To do so, I generate a data set derived from a multivariate normal distribution based on the number of time points, the strength of density dependence, and setting the initial state (x0) to be the first value from the simulated data. 
+
+For each time step, each state ($xt$) is defined by the model This simulated data is then used for the response in the model. Model parameters: In order to set up the data for modeling using the MARSS() function from the MARSS package, we begin by setting the initial state ($x0$) – since the model is autoregressive (meaning dependent on previous time points of the same series), the $x0$ term should be defined first. the bias term ($u$) and the ($a$) term in the AR(1) model to be zero, since u is difficult to estimate in practice along with setting the $Z$ matrix to one, $Q$ to “q” and r to “r” to represent the variances of the state and observation model respectively. Each of these is plugged in as a matrix within a list so that the MARSS function can appropriately calculate each parameter.
+
+Estimates and analyses:
+
+
+

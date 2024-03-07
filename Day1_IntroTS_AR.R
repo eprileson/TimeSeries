@@ -43,7 +43,7 @@ ts(mt, start = c(2001, 1), end = c(2003, 12), frequency = 12) #or last arg could
 #datasets:
 ## Atmospheric CO2 measured on Mauna Loa, Hawai'i
 CO2 <- read.csv("https://raw.githubusercontent.com/SOE592/website/main/lectures/day_01/data/ML_CO2.csv")
-
+head(CO2)
 ## Northern hemisphere temperature anomolies
 NH_temp <- read.csv("https://raw.githubusercontent.com/SOE592/website/main/lectures/day_01/data/NH_temp.csv")
 
