@@ -2,10 +2,6 @@
 title: "EGP_project"
 author: "Eric Prileson"
 date: "`r Sys.Date()`"
-output:
-  html_document: default
-  pdf_document: default
-  word_document: default
 output: rmarkdown::github_document
 ---
 
