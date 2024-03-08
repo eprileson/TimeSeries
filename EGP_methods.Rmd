@@ -2,7 +2,10 @@
 title: "EGP_project"
 author: "Eric Prileson"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
 ---
 
 ## Methods:
@@ -45,7 +48,16 @@ Where $vt$ \~ $MVN(0, r)$.
 
 ```{r}
 set.seed(592)
-library(MASS)
+packages <- c("lubridate", "reshape2", "devtools", "stats", "TMB", 
+              "MARSS", "marssTMB", "datasets", "magrittr", "tidyr", "forecast", 
+              "ggplot2", "viridis", "esquisse", "MASS", "AICcmodavg", "knitr")
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+#load packages:
+invisible(lapply(packages, library, character.only = TRUE))
+
 #use mvnorm() function from {MASS} pkg to simulate multivariate normally dist data
 TT_a <- 19 #time steps
 
@@ -225,7 +237,7 @@ xx_hatA <- mod_rwA$states
 xx_hatASE <- mod_rwA$states.se
   
 #extract specific coefficients:
-par_estsA <- coef(mod_fitA, type = "vector")
+par_estsA <- coef(mod_rwA, type = "vector")
 
 
 #extract the model states and SE for model B;
@@ -233,7 +245,7 @@ xx_hatB <- mod_rwB$states
 xx_hatBSE <- mod_rwB$states.se
   
 #extract specific coefficients:
-par_estsB <- coef(mod_fitB, type = "vector")
+par_estsB <- coef(mod_rwB, type = "vector")
 ```
 
 ### References:
