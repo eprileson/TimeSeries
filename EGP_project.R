@@ -10,7 +10,7 @@ setwd("C:/Users/prile/OneDrive - Washington State University (email.wsu.edu)/PhD
 #More efficient way of checking and installing packages:
 packages <- c("lubridate", "reshape2", "devtools", "learnr", "stats", "TMB", 
               "MARSS", "marssTMB", "datasets", "magrittr", "tidyr", "forecast", 
-              "ggplot2", "viridis", "esquisse", "MASS")
+              "ggplot2", "viridis", "esquisse", "MASS", "AICcmodavg")
 installed_packages <- packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
@@ -99,7 +99,7 @@ plot.ts(dros.ts, ylab = "Population", xlab = "Date")
 set.seed(592)
 library(MASS)
 #use mvnorm() function from {MASS} pkg to simulate multivariate normally dist data
-TT <- 14 #time steps
+TT <- 19 #time steps
 
 #set strength of density dependence (highly variable in Dros)
 
@@ -131,10 +131,27 @@ vv <- mvrnorm(n = TT, mu = c(0,0,0,0), Sigma = RR) %>% t()
 yy <- xx + vv
 
 
+#make the Z model matrix:
+#start with 0s
+Z.modelA <- matrix(0, 19, 4)
+
+#then add elements that are 1 in col 1
+Z.modelA[c(1, 5, 9, 13, 17),1] <- 1
+
+#elements that are 1 in col 2:
+Z.modelA[c(2, 6, 10, 14, 18), 2] <- 1
+
+#elements that are 1 in col 3:
+Z.modelA[c(3, 7, 11, 15, 19), 3] <- 1
+
+#elements that are 1 in col 4:
+Z.modelA[c(4, 8, 12, 16), 4] <- 1
+str(Z.modelA)
+
 ### setting up model parameters for MARSS: need to make everything a matrix using a list for each item
 # from the state and obs models:
 
-model_list <- list(
+model_listA <- list(
   #state model:
   B = diag(4), #identity matrix
   U = matrix(0, 4, 1), # 4x1 0 matrix for bias factor
@@ -145,7 +162,7 @@ model_list <- list(
                list(0),list(0),list("q"),list(0),
                list(0),list(0),list(0),list("q")), 4, 4),
   #obs model
-  Z = diag(4), #identity matrix
+  Z = diag(4), #Z matrix to map obs onto state
   A = matrix(0, 4, 1), #scaling coeff A, set to 0
   D = matrix(0, 4, 1), #explanatory coeff effect none here set to 0
   d = matrix(0), #explanatory variable, none for this model
@@ -158,11 +175,16 @@ model_list <- list(
 
 ##now fit the random walk with bias to the simulated data with MARSS
 
+#need to set the observations (y) to a defined N (rows) x T (cols) matrix, where
+# T = time steps, so 14:
+YY <- matrix(yy, nrow = 4, ncol = TT)
+
+
 #fit model:
-mod_rw <- MARSS(y = yy, model = model_list)
+mod_rwA <- MARSS(y = YY, model = model_listA)
 
 ##analyses:
-xx_hat <- mod_rw$
+xx_hatA <- mod_rwA$states
 
 ##plot estimates:
 ggplot(data = mod_rw$states, aes(x = xx, y = xx_hat))+
@@ -204,7 +226,7 @@ points(xx_hat[4, TT], xx_hat[3, TT], xx_hat[2, TT], xx_hat[1, TT],
 set.seed(592)
 library(MASS)
 #use mvnorm() function from {MASS} pkg to simulate multivariate normally dist data
-TT <- 14 #time steps
+TT_b <- 19 #time steps
 
 #set strength of density dependence (highly variable in Dros)
 
@@ -217,13 +239,13 @@ uu <- 0
 QQ <- diag(c(0.01, 0.01, 0.01, 0.01)) # no covariance, simulated process error vals
 
 #transpose process errors to match equational form
-ww <- mvrnorm(n = TT, mu = c(0,0,0,0), Sigma = QQ) %>% t() #mu = mean, specified to be 0 in all models where we subtract u
+ww <- mvrnorm(n = TT_b, mu = c(0,0,0,0), Sigma = QQ) %>% t() #mu = mean, specified to be 0 in all models where we subtract u
 
 #initialize state vector:
 xx <- ww
 
 #sinmulate data as random walk with bias
-for (t in 2:TT){
+for (t in 2:TT_b){
   xx[,t] <- xx[, t-1] + uu + ww[, t]
 }
 
@@ -231,7 +253,7 @@ for (t in 2:TT){
 RR <- diag(c(0.005, 0.005, 0.005, 0.005))
 
 #observation errors from mvn with 0 as mean and var as matrix above; transposed to match vals in state
-vv <- mvrnorm(n = TT, mu = c(0,0,0,0), Sigma = RR) %>% t()
+vv <- mvrnorm(n = TT_b, mu = c(0,0,0,0), Sigma = RR) %>% t()
 
 yy <- xx + vv
 
@@ -239,7 +261,23 @@ yy <- xx + vv
 ### setting up model parameters for MARSS: need to make everything a matrix using a list for each item
 # from the state and obs models:
 
-model_list <- list(
+#make the Z model matrix:
+#start with 0s
+Z.modelB <- matrix(0, 19, 4)
+
+#then add elements that are 1 in col 1
+Z.modelB[c(1, 5, 9, 13, 17),1] <- 1
+
+#elements that are 1 in col 2:
+Z.modelB[c(2, 6, 10, 14, 18), 2] <- 1
+
+#elements that are 1 in col 3:
+Z.modelB[c(3, 7, 11, 15, 19), 3] <- 1
+
+#elements that are 1 in col 4:
+Z.modelB[c(4, 8, 12, 16), 4] <- 1
+
+model_listB <- list(
   #state model:
   B = diag(4), #identity matrix
   U = matrix(0, 4, 1), # 4x1 0 matrix for bias factor
@@ -250,7 +288,7 @@ model_list <- list(
                list(0),list(0),list("q"),list(0),
                list(0),list(0),list(0),list("q")), 4, 4),
   #obs model
-  Z = diag(4), #identity matrix
+  Z = diag(4),
   A = matrix(0, 4, 1), #scaling coeff A, set to 0
   D = matrix(0, 4, 1), #explanatory coeff effect none here set to 0
   d = matrix(0), #explanatory variable, none for this model
@@ -264,20 +302,20 @@ model_list <- list(
 
 #need to set the observations (y) to a defined N (rows) x T (cols) matrix, where
 # T = time steps, so 14:
-YY <- matrix(yy, nrow = 4, ncol = TT)
+YY_b <- matrix(yy, nrow = 4, ncol = TT_b)
 
 ##now fit the random walk with bias to the simulated data with MARSS
 
 #fit model with the response as the observation matrix and the model as the list of matrices 
 #defined above:
-mod_rw <- MARSS(y = YY, model = model_list)
+mod_rwB <- MARSS(y = YY_b, model = model_listB)
 
 ##analyses:
-xx_hat <- mod_rw$states
+xx_hatB <- mod_rwB$states
   
-  ##plot estimates:
-  ggplot(data = mod_rw$states, aes(x = xx, y = xx_hat))+
-  geom_point()
+
+#model selection:
+lapply(mods, AICc)
 
 
 
