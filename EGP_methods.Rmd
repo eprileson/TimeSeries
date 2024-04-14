@@ -23,7 +23,7 @@ $xt = bxt-1 + u + wt$
 
 Where $wt$ \~ $MVN(0, Q)$
 
-We then have our observation modeled with $yt$ as a 19 x 1 matrix representing the observed abundance at each time point, $Z$ equal to the matrix mapping the observations onto the states (i.e., a 14 x 4 matrix such that the total observations in the $yt$ 14 x1 matrix can be multiplied to (mapped onto) the $xt$ 4 x 1 matrix), $xt$ representing the underlying processes as a 4 x 1 matrix, $a$ is the sampling bias or offset as a 14 x 1 matrix, and $R$ is the variance – covariance matrix of the observation errors with $R$s on the diagonal and 0s on the off-diagonal. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent.
+We then have our observation modeled with $yt$ as a 19 x 1 matrix representing the observed abundance at each time point, $Z$ equal to the matrix mapping the observations onto the states (i.e., a 19 x 4 matrix such that the total observations in the $yt$ 19 x1 matrix can be multiplied to (mapped onto) the $xt$ 4 x 1 matrix), $xt$ representing the underlying processes as a 4 x 1 matrix, $a$ is the sampling bias or offset as a 14 x 1 matrix, and $R$ is the variance – covariance matrix of the observation errors with $R$s on the diagonal and 0s on the off-diagonal. We assume the distribution of the observation errors follow a Gaussian distribution, have constant variance, and are independent.
 
 $yt = Zxt + a + vt$
 
