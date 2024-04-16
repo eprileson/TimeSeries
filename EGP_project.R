@@ -81,11 +81,13 @@ dros$Date <- mdy(dros$Date)
 #esquisser set up
 esquisser(data = dros)
 
+
 b <- 
-ggplot(data = dros, aes(x = Date, y = population, colour = treatment, group = treatment)) +
+ggplot(data = dros, aes(x = Date, y = log_pop, colour = treatment, group = treatment)) +
+  geom_line(stat = "summary", fun = mean, size = 1)+
   geom_point(size = 3, stat = "summary", fun = "mean") +
   scale_color_viridis_d(option = "plasma") +
-  facet_grid(rows = vars(treatment))+
+  facet_wrap(~treatment, nrow = 2, ncol = 2)+
   labs(y = bquote("Population size (log "[e]*")"), color = "Population type") +
   guides(color = "none")+
   theme_classic()+
@@ -94,7 +96,8 @@ ggplot(data = dros, aes(x = Date, y = population, colour = treatment, group = tr
     axis.text = element_text(size = 14),
     strip.text = element_text(size = 12)
   )
-
+geom_line()+
+  
 geom_errorbar(width = 0.05, fun.data = "mean_se", stat = "summary")+
   
 
@@ -276,6 +279,20 @@ facet_wrap(~labeller = as_labeller(labels2))+
   
 #without the plot.type arg = the diagnostic plots for residuals and  #autocorrelation
 #the fitted plot doesn't seem to work super well for the time series; 
+
+
+##Forecasting:
+  
+#try the forecast package:
+mod_rwA2 %>%
+  forecast(h = 8) %>% #set number of time steps beyond data to 4
+  autoplot()
+  
+  
+  
+  
+  
+
 
 
 #####
