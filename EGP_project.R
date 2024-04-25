@@ -30,10 +30,6 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 
 
-install.packages('marssTMB',
-                 repos = c('https://atsa-es.r-universe.dev','https://cloud.r-project.org'))
-library(marssTMB)
-
 ####
 #### Goals: model time series of Drosophila populations outdoors
 
@@ -78,11 +74,7 @@ dros$log_pop <- ifelse(dros$population != 0, log(dros$population), 0)
 dros$Date <- mdy(dros$Date)
 
 #basic plot for raw data:
-#esquisser set up
-esquisser(data = dros)
-
-
-b <- 
+baseplot <- 
 ggplot(data = dros, aes(x = Date, y = log_pop, colour = treatment, group = treatment)) +
   geom_line(stat = "summary", fun = mean, size = 1)+
   geom_point(size = 3, stat = "summary", fun = "mean") +
@@ -96,9 +88,9 @@ ggplot(data = dros, aes(x = Date, y = log_pop, colour = treatment, group = treat
     axis.text = element_text(size = 14),
     strip.text = element_text(size = 12)
   )
-geom_line()+
+#geom_line()+
   
-geom_errorbar(width = 0.05, fun.data = "mean_se", stat = "summary")+
+#geom_errorbar(width = 0.05, fun.data = "mean_se", stat = "summary")+
   
 
 #now instead of grouping by cage, let's group by avg pop / population type:
@@ -189,7 +181,8 @@ model_listSim <- list(
 YYsim <- matrix(yy, nrow = 4, ncol = 19)
 simMod <- MARSS(YYsim, model_listSim)
 #plot simulated data
-autoplot(simModA, plot.type = "fitted.ytT") #this seems to plot the simulated data
+autoplot(simModA, plot.type = "fitted.ytT")+
+  theme_classic()#this seems to plot the simulated data
 #well
 
 
@@ -216,6 +209,8 @@ model_listA1 <- list(
                list(0),list(0),list(0),list("r")), 4, 4)
 )
 
+
+
 #make new model with params with U as 'unequal'
 model_listA2 <- list(
   #state model:
@@ -225,7 +220,7 @@ model_listA2 <- list(
   c = matrix(0),
   Q = "unconstrained",
   #obs model
-  Z = diag(4), #Z matrix to map obs onto state
+  Z = factor(c(1,2,3,3)), #Z matrix to map obs onto state
   A = matrix(0, 4, 1), #scaling coeff A, set to 0
   D = matrix(0, 4, 1), #explanatory coeff effect none here set to 0
   d = matrix(0), #explanatory variable, none for this model
@@ -246,8 +241,8 @@ class(YY)
 
 #fit model:
 mod_rwA1 <- MARSS(y = YY, model = model_listA1, method = "BFGS") #was able to run 
-summary(mod_rwA2)
-mod_rwA2$ytT
+summary(mod_rwA1)
+
 #fit second model:
 mod_rwA2 <- MARSS(y = YY, model = model_listA2, method = "BFGS")
 
@@ -258,28 +253,39 @@ mod_rwA2 <- MARSS(y = YY, model = model_listA2, method = "BFGS")
 
 
 ##analyses:
-xx_hatA <- mod_rwA$states
+xx_hatA <- mod_rwA2$ytT
 
 #extract coef:
 params <- MARSSparamCIs(mod_rwA2, alpha = 0.05)
-params
+upper <- matrix(params$ytT + ((params$ytT.se)*1.96))
+lower <- matrix(params$ytT - ((params$ytT.se)*1.96))
 
 ##plot estimates:
 plot(mod_rwA2)
+
+#Final plot, model 1
 autoplot(mod_rwA2, plot.type = "fitted.ytT")+ # plot for each time series 
+  geom_line(color =cols, size = 1)+
+  geom_point(size = 2, color = cols)+
   scale_color_viridis_d()+
   labs(title = "", caption = "", x = "Time step", y = bquote("Population (Log "[e]*")"))+
+  ylim(-0.5, 11)+
   theme_classic()+
   theme(
     axis.title = element_text(size = 16),
     axis.text = element_text(size = 14),
     strip.text = element_text(size = 12)
-  )
-facet_wrap(~labeller = as_labeller(labels2))+
+  )  
+#not able to color the CIs and line
+#geom_ribbon(aes(ymin = lower, ymax = upper, fill = params$states),color = cols, alpha = 0.25)+
   
-#without the plot.type arg = the diagnostic plots for residuals and  #autocorrelation
-#the fitted plot doesn't seem to work super well for the time series; 
+cols <- c("#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887","#0E0887", "#0E0887","#0E0887","#0E0887",
+          "#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D","#9D179D",
+          "#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953","#EB7953",
+          "#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A","#F2FA1A")
+          
 
+  
 
 ##Forecasting:
   
@@ -288,7 +294,7 @@ mod_rwA2 %>%
   forecast(h = 8) %>% #set number of time steps beyond data to 4
   autoplot()
   
-  
+  #doesn't tell us much
   
   
   
@@ -532,7 +538,7 @@ plot(xx[4,], xx[3,]mod_rwBplot(xx[4,], xx[3,], xx[2,], xx[1],
      xlim = range(xx[1:4,], yy[1:4, ], xx_hat[1:4, ]),
      ylim = range(xx[1:4, ], yy[1:4, ], xx_hat[1:4, ]),
      pch = 16, type = "o", col = "blue",
-     xlab = "Time Points", ylab = "Fly population")
+     xlab = "Time Points", ylab = "Fly population"))
 ## add start & end points
 points(xx[4,], xx[3,], xx[2, 1], xx[1, 1],
        pch = 5, cex = 2, col = "blue")
@@ -605,10 +611,19 @@ yy <- xx + vv
 
 #make the Z model matrix:
 #start with 0s
-Z.modelA <- matrix(0, 19, 4)
+Z.modelA <- matrix(0, 4, 4)
 
 #then add elements that are 1 in col 1
-Z.modelA[c(1, 5, 9, 13, 17),1] <- 1
+Z.modelA[1, c(1)] <- 1
+Z.modelA[2,c(3)] <- 1
+Z.modelA[3, c(3)] <- 1
+Z.modelA[4, c(4)] <- 1
+
+
+1000010000100001000
+0100001000010000100
+0010000100001000010
+0001000010000100001
 
 #elements that are 1 in col 2:
 Z.modelA[c(2, 6, 10, 14, 18), 2] <- 1
